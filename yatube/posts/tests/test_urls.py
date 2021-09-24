@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase, Client
-from ..models import Post, Group, Follow
+from ..models import Post, Group
 from http import HTTPStatus
 from django.core.cache import cache
 
@@ -22,9 +22,6 @@ class PostURLTests(TestCase):
             slug='test-slug',
             description='Тестовое описание',
         )
-        #cls.follow = Follow.objects.create(
-        #author=cls.user,
-        #)
 
     def setUp(self):
         self.guest_client = Client()
