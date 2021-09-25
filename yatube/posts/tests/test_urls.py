@@ -79,19 +79,6 @@ class PostURLTests(TestCase):
         response = self.authorized_author.get('/posts/1/edit/')
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-    def test_follow_user_to_author(self):
-        """Если пользователь авторизован,
-        то ему можно подписываться на других пользователей и
-        удалять их из подписок.
-        """
-        url_names = {
-            '/profile/Andrey/follow/',
-            '/profile/Andrey/unfollow/',
-        }
-        for value in url_names:
-            response = self.authorized_client.get(value)
-            self.assertEqual(response.status_code, HTTPStatus.FOUND)
-
     def test_follow_url_redirect_anonymous_on_auth_login(self):
         """Страницы /follow/ и /unfollow/ перенаправят
         анонимного пользователя на страницу логина.
