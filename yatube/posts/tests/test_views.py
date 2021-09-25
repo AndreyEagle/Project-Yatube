@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django import forms
-from ..models import Follow, Post, Group
+from ..models import Comment, Follow, Post, Group
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.conf import settings
 from django.core.cache import cache
@@ -57,9 +57,6 @@ class PostPagesTests(TestCase):
         self.user = User.objects.create_user(username='User')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
-        self.user_unfollow = User.objects.create_user(username='Unfollow')
-        self.authorized_client_unfollow = Client()
-        self.authorized_client_unfollow.force_login(self.user_unfollow)
         self.authorized_author = Client()
         self.authorized_author.force_login(self.post.author)
         cache.clear()
@@ -67,23 +64,21 @@ class PostPagesTests(TestCase):
     def test_pages_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
         templates_page_names = {
-            'posts/index.html': reverse('posts:index'),
-            'posts/group_list.html': reverse(
-                'posts:group_list', kwargs={'slug': 'test-slug'}
-            ),
-            'posts/profile.html': reverse(
-                'posts:profile', kwargs={'username': 'User'}
-            ),
-            'posts/post_detail.html': reverse(
-                'posts:post_detail', kwargs={'post': '1'}
-            ),
-            'posts/create_post.html': reverse('posts:post_create'),
-            'posts/update_post.html': reverse(
-                'posts:post_edit', args=('1',)
-            ),
+            reverse('posts:index'): 'posts/index.html',
+            reverse(
+                'posts:group_list',
+                kwargs={'slug': 'test-slug'}): 'posts/group_list.html',
+            reverse(
+                'posts:profile',
+                kwargs={'username': 'User'}): 'posts/profile.html',
+            reverse(
+                'posts:post_detail',
+                kwargs={'post': '1'}): 'posts/post_detail.html',
+            reverse('posts:post_create'): 'posts/create_post.html',
+            reverse('posts:post_edit', args=('1',)): 'posts/create_post.html',
         }
-        for template, reverse_name in templates_page_names.items():
-            with self.subTest(template=template):
+        for reverse_name, template in templates_page_names.items():
+            with self.subTest(reverse_name=reverse_name):
                 response = self.authorized_author.get(reverse_name)
                 self.assertTemplateUsed(response, template)
 
@@ -161,22 +156,65 @@ class PostPagesTests(TestCase):
             reverse('posts:index')).content
         self.assertNotEqual(content_add, content_delete)
 
-    def test_follow_page_list_is_1(self):
-        """Новая запись пользователя появляется в ленте тех,
-        кто на него подписан и не появляется в ленте тех, кто не подписан.
-        """
+    def test_user_following_author(self):
+        """Проверка того что пользователь может подписаться на автора."""
+        Follow.objects.count()
+        response = self.authorized_client.get(
+            reverse('posts:profile_follow', kwargs={'username': 'Andrey'}),
+            follow=True
+        )
+        self.assertRedirects(response, reverse(
+            'posts:profile', kwargs={'username': 'Andrey'}),
+        )
+        self.assertEqual(Follow.objects.count(), 1)
+        self.assertNotEqual(Follow.objects.count(), 2)
+        self.assertTrue(
+            Follow.objects.filter(
+                user=self.user,
+                author=self.user_following
+            ).exists()
+        )
+
+    def test_user_unfollow_author(self):
+        """Проверка того что пользователь может отписаться на автора."""
+        Follow.objects.count()
         self.follow = Follow.objects.create(
             user=self.user,
             author=self.user_following
         )
-        page_names = {
-            reverse('posts:follow_index'),
+        response = self.authorized_client.get(reverse(
+            'posts:profile_unfollow', kwargs={'username': 'Andrey'}),
+            follow=True
+        )
+        self.assertEqual(Follow.objects.count(), 0)
+        self.assertRedirects(response, reverse(
+            'posts:profile', kwargs={'username': 'Andrey'}),
+        )
+
+    def test_user_comment_post(self):
+        """Проверка того, что авторизованный пользователь
+        может писать комментарии к посту.
+        """
+        Comment.objects.count()
+        comment = {
+            'text': 'Тестовый комментарий'
         }
-        for reverse_name in page_names:
-            response = self.authorized_client.get(reverse_name)
-            self.assertEqual(response.context['page_obj'].count(self.post), 1)
-        response = self.authorized_client_unfollow.get(reverse_name)
-        self.assertNotEqual(response.context['page_obj'].count(self.post), 1)
+        response = self.authorized_client.post(
+            reverse('posts:add_comment', args=('1',)),
+            data=comment,
+            follow=True)
+
+        self.assertRedirects(response, reverse(
+            'posts:post_detail', kwargs={'post': '1'}),
+        )
+        self.assertEqual(Comment.objects.count(), 1)
+        self.assertNotEqual(Comment.objects.count(), 2)
+        self.assertTrue(
+            Comment.objects.filter(
+                author=self.user,
+                text='Тестовый комментарий'
+            ).exists()
+        )
 
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)

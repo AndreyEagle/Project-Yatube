@@ -56,9 +56,9 @@ def profile(request, username):
 
 def post_detail(request, post):
     post = get_object_or_404(Post, id=post)
-    posts = Post.objects.filter(author=post.author)
+    posts = post.author.posts
     form = CommentForm(request.POST or None)
-    comments = post.comments.filter(post=post)
+    comments = post.comments.all()
     context = {
         'post': post,
         'group': post.group,
@@ -96,7 +96,7 @@ def post_edit(request, post_id):
     if form.is_valid():
         form.save(commit=False).save()
         return redirect('posts:post_detail', post_id)
-    return render(request, 'posts/update_post.html', {
+    return render(request, 'posts/create_post.html', {
         'form': form,
         'post': post,
         'is_edit': True}
@@ -132,20 +132,22 @@ def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     user = request.user
     if author != user:
-        if request.method != 'POST':
-            Follow.objects.get_or_create(
-                user=user,
-                author=author
-            )
+        request.method != 'POST'
+        Follow.objects.get_or_create(
+            user=user,
+            author=author
+        )
     return redirect('posts:profile', author)
 
 
 @login_required
 def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
+    user_unfollow = get_object_or_404(
+        Follow,
+        user=request.user,
+        author=author
+    )
     if request.method != 'POST':
-        Follow.objects.filter(
-            user=request.user,
-            author=author
-        ).delete()
+        user_unfollow.delete()
     return redirect('posts:profile', author)

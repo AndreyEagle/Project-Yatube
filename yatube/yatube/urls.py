@@ -21,12 +21,10 @@ from django.conf.urls.static import static
 app_name = 'posts'
 app_name = 'users'
 app_name = 'about'
-app_name = 'home'
-
+app_name = 'core'
 
 urlpatterns = [
     path('', include('posts.urls', namespace='posts')),
-    path('', include('home.urls', namespace='home')),
     path('admin/', admin.site.urls),
     path('auth/', include('users.urls', namespace='users')),
     path('about/', include('about.urls', namespace='about')),

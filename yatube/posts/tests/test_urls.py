@@ -25,9 +25,9 @@ class PostURLTests(TestCase):
 
     def setUp(self):
         self.guest_client = Client()
-        self.user = User.objects.create_user(username='Noauthor')
+        self.user_comment = User.objects.create_user(username='Noauthor')
         self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
+        self.authorized_client.force_login(self.user_comment)
         self.authorized_author = Client()
         self.authorized_author.force_login(self.post.author)
 
@@ -120,10 +120,18 @@ class PostURLTests(TestCase):
             '/profile/Andrey/': 'posts/profile.html',
             '/posts/1/': 'posts/post_detail.html',
             '/create/': 'posts/create_post.html',
-            '/posts/1/edit/': 'posts/update_post.html',
+            '/posts/1/edit/': 'posts/create_post.html',
             '/follow/': 'posts/follow.html',
         }
         for address, template in templates_url_names.items():
             with self.subTest(address=address):
                 response = self.authorized_author.get(address)
                 self.assertTemplateUsed(response, template)
+
+    def test_url_redirect_add_comment_on_post_detail(self):
+        """После добавления комментария пользователь
+        перенаправится на страницу с постом.
+        """
+        response = self.authorized_client.get('/posts/1/comment')
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertRedirects(response, '/posts/1/')
