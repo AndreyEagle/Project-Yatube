@@ -114,10 +114,10 @@ class CommentModelTest(TestCase):
             text='Тестовый комментарий'
         )
 
-    def test_post_models_correct_work_str(self):
+    def test_comment_models_correct_work_str(self):
         """Проверяем, что у модели Comment корректно работает __str__."""
         comment = CommentModelTest.comment
-        self.assertEqual(comment.text, str(comment))
+        self.assertEqual(len(str(comment)), 15)
 
     def test_comment_verbose_name(self):
         """verbose_name в полях совпадает с ожидаемым."""

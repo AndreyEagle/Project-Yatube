@@ -11,7 +11,7 @@ from django.views.decorators.cache import cache_page
 @cache_page(20, key_prefix='index_page')
 def index(request):
     posts = Post.objects.all()
-    paginator = Paginator(posts, settings.VAR)
+    paginator = Paginator(posts, settings.POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     title = 'Последние обновления на сайте'
@@ -25,7 +25,7 @@ def index(request):
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
     posts = group.posts.all()
-    paginator = Paginator(posts, settings.VAR)
+    paginator = Paginator(posts, settings.POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     context = {
@@ -39,7 +39,7 @@ def group_posts(request, slug):
 def profile(request, username):
     author = get_object_or_404(User, username=username)
     post_user = author.posts.all()
-    paginator = Paginator(post_user, settings.VAR)
+    paginator = Paginator(post_user, settings.POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     following = Follow.objects.filter(
@@ -118,7 +118,7 @@ def add_comment(request, post_id):
 @login_required
 def follow_index(request):
     posts = Post.objects.filter(author__following__user=request.user)
-    paginator = Paginator(posts, settings.VAR)
+    paginator = Paginator(posts, settings.POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     context = {
@@ -132,7 +132,6 @@ def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     user = request.user
     if author != user:
-        request.method != 'POST'
         Follow.objects.get_or_create(
             user=user,
             author=author
